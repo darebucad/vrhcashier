@@ -1,39 +1,24 @@
-<?php
 
-/*
-  Dietary page of Dental Information System
-*/
-
-
-// Start Session
-session_start();
+<?php 
 
 
 
-// check user login
-if(empty($_SESSION['user_id']))
-{
-    header("location: ../index.php");
-}
+  // outpatientcashier.php
 
+  //include('connection.php');
 
-// Database connection
-require_once('../config/connection.php');
-$db = DB();
+  // Database connection
+  require_once('../config/connection.php');
+  
+  $db = DB();
+  $statement = $db->prepare("SELECT enccode,hpercode,upicode,acctno,orno,ordate,sum(amt),curcode,paytype,paycode,bal,payrem,paystat, paylock,datemod,updsw,confdl,entryby,payctr,pcchrgcod,chrgcode,itemcode,chrgtbl,preorno 
+  FROM hpay 
+  GROUP BY preorno 
+  ORDER by ordate DESC");
 
-// Application library ( with Library class )
-require_once('../functions/library.php');
-
-
-$lib = new Library();
-
-$user = $lib->GetUserDetails($_SESSION['user_id']); // get user account details
-
-
-$ward = $lib->GetWardDetails(); // get list of wards
-
-
-
+  $statement->execute();
+  $all_result = $statement->fetchAll();
+  $total_rows = $statement->rowCount();
 
 ?>
 
@@ -46,7 +31,7 @@ $ward = $lib->GetWardDetails(); // get list of wards
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <meta name="description" content="">
   <meta name="author" content="">
-  <title>Dietary</title>
+  <title>Veterans Regional Hospital</title>
   <!-- Bootstrap core CSS-->
   <link href="../vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
   <!-- Custom fonts for this template-->
@@ -67,7 +52,7 @@ $ward = $lib->GetWardDetails(); // get list of wards
     <div class="collapse navbar-collapse" id="navbarResponsive">
       <ul class="navbar-nav navbar-sidenav" id="exampleAccordion">
         <li class="nav-item" data-toggle="tooltip" data-placement="right" title="Dashboard">
-          <a class="nav-link" href="index.html">
+          <a class="nav-link" href="dashboard.php">
             <i class="fa fa-fw fa-dashboard"></i>
             <span class="nav-link-text">Dashboard</span>
           </a>
@@ -78,12 +63,25 @@ $ward = $lib->GetWardDetails(); // get list of wards
             <span class="nav-link-text">Dietary</span>
           </a>
         </li>
-        <li class="nav-item" data-toggle="tooltip" data-placement="right" title="Tables">
-          <a class="nav-link" href="tables.html">
-            <i class="fa fa-fw fa-table"></i>
-            <span class="nav-link-text">Tables</span>
+        <li class="nav-item" data-toggle="tooltip" data-placement="right" title="Cashier">
+           <a class="nav-link nav-link-collapse collapsed" data-toggle="collapse" href="#collapseCashier" data-parent="#exampleAccordion">
+            <i class="fa fa-fw fa-wrench"></i>
+            <span class="nav-link-text">Cashier Management</span>
           </a>
+          <ul class="sidenav-second-level collapse" id="collapseCashier">
+            <li>
+              <a href="inpatientcashier.php">In-Patient Payment</a>
+            </li>
+            <li>
+              <a href="outpatientcashier.php">Out-Patient Payment</a>
+            </li>
+            <li>
+              <a href="walkinpatientcashier.php">Walk-In Payment</a>
+            </li>
+          </ul>
         </li>
+
+
         <li class="nav-item" data-toggle="tooltip" data-placement="right" title="Components">
           <a class="nav-link nav-link-collapse collapsed" data-toggle="collapse" href="#collapseComponents" data-parent="#exampleAccordion">
             <i class="fa fa-fw fa-wrench"></i>
@@ -261,96 +259,90 @@ $ward = $lib->GetWardDetails(); // get list of wards
     </div>
   </nav>
 
+<!-- Start of body -->
 
-<div class="content-wrapper">
 
+  <div class="content-wrapper">
     <div class="container-fluid">
-      <div class="row">
-        <div class="col-lg-12">
-            <h3 class="page-header">Dietary</h3>
-        </div>
-        <!-- /.col-lg-12 -->
-      </div>
-      <!-- /.row -->
-      <hr />
 
-        <!-- Dietary details -->
+      <!-- <h4>Cashier Management</h4>
+      <hr> -->
+
+      <!-- Breadcrumbs-->
+      
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+          <a href="#">Cashier Management</a>
+        </li>
+        <li class="breadcrumb-item active">Out-Patient Payment</li>
+      </ol>
+        
+
+      <!-- Create button -->
+      <div class="row">
+      	<div class="col-xl-12" style="margin-bottom:10px">
+      		<a class="btn btn-primary" href="addpayment.php" role="button">Create</a> 
+      	</div>
+      </div>
+
+
+  
+    <!-- Example DataTables Card-->
+   
       <div class="card mb-3">
         <div class="card-header">
-          <i class="fa fa-area-chart"></i> Details</div>
+          <i class="fa fa-table"></i> Data Table Example</div>
         <div class="card-body">
-
-          <form role="form">
-            <div class="form-group">
-
-              <label for="paramdate-input">Date:</label>
-              <input class="form-control" name="paramdate" id="paramdate-input" type="date" aria-describedby="emailHelp" placeholder="Enter Date">
-               
-            </div><!-- /.form-group -->
-
-            <div class="form-group">
-
-              <label for="paramward-select">Ward:</label>
-              <select class="form-control" name="fileselect" id="paramward-select" aria-describedby="emailHelp" placeholder="Select Ward">
+          <div class="table-responsive">
+            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+              <thead>
+                <tr>
+                  <th>OR No.</th>
+                  <th>OR Date</th>
+                  <th>Patient Name</th>
+                  <th>Total Amount</th>
+                  <th>PDF</th>
+                  <th>Edit</th>
+                  <th>Delete</th>
+                </tr>
+                
+              </thead>
               <?php
 
-              $pdo = new PDO('mysql:host=localhost;port=3307;dbname=hospital_dbo', 'root', 'root');
-              $stmt = $pdo->query("SELECT wardcode,wardname FROM hward ORDER BY wardname ASC");
-              
 
-              //$stmt = $pdo->execute();
-              
+                if($total_rows > 0){
+                  foreach($all_result as $row){
+                    echo '
+                      <tr>
+                        <td>'.$row["preorno"].'</td>
+                        <td>'.$row["ordate"].'</td>
+                        <td>'.$row["hpercode"].'</td>
+                        <td>'.$row["sum(amt)"].'</td>
+                        <td><a href="#">PDF</a></td>
+                        <td><a href="#">Edit</a></td>
+                        <td><a href="#">Delete</a></td>
+                      </tr>
+                    ';
+                  }
+                }
 
-              echo "<option value='null'> </option>";
-              while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-              echo "<option value='" . $row['wardcode'] . "'>" . $row['wardname'] . "</option>";
-              
-              }
               ?>
-              </select>
-                
-            </div> <!-- /.form-group -->
-
-            <!--
-
-            <div class="form-group">
-              <label for="paramward-select">Ward:</label>
-              <select class="form-control" name="paramward" id="paramward-select" aria-describedby="emailHelp" placeholder="Select Ward">
-                    <option>Medical Ward</option>
-                    <option>Pay Ward</option>
-                    <option>OB Ward</option>
-                    <option>MIS Ward</option>
-                    <option>Trauma Ward</option>
-                </select>
-
-              <input class="form-control" name="paramward" id="paramward-input" type="text" aria-describedby="emailHelp" placeholder="Select Ward"> 
-
-
-            <button type="submit" class="btn btn-primary">Generate Button</button>
-            </div> /.form-group 
-
-                <input a href="" class="btn btn-primary" type="submit" name="btn_login" value="Generate Button">
-
-          -->
-        
-            
-        
-
-            <a href="../vendor/tcpdf/examples/dietlist.php" title="PDF [new window]" target="_blank" class="btn btn-primary" role="button">Generate</a>
-        
-          </form>
+  
+            </table>
+          </div>
         </div>
+
+
+
         <div class="card-footer small text-muted">Updated yesterday at 11:59 PM</div>
-
-      </div><!-- /.card mb-3 -->
-
+      </div>
     </div>
     <!-- /.container-fluid-->
     <!-- /.content-wrapper-->
     <footer class="sticky-footer">
       <div class="container">
         <div class="text-center">
-          <small>Copyright © Your Website 2017</small>
+          <small>Copyright © Your Website 2018</small>
         </div>
       </div>
     </footer>
@@ -371,7 +363,7 @@ $ward = $lib->GetWardDetails(); // get list of wards
           <div class="modal-body">Select "Logout" below if you are ready to end your current session.</div>
           <div class="modal-footer">
             <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-            <a class="btn btn-primary" href="login.html">Logout</a>
+            <a class="btn btn-primary" href="logout.php">Logout</a>
           </div>
         </div>
       </div>
@@ -394,3 +386,11 @@ $ward = $lib->GetWardDetails(); // get list of wards
 </body>
 
 </html>
+
+<script type="text/javascript">
+
+  $(document).ready(function(){
+    var table = $('#dataTable').DataTable();
+  })
+
+  </script>
