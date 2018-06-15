@@ -15,7 +15,7 @@ if(isset($_POST["btn_barcode"])){
   }
 
   else{
-    $statement = $db->prepare("SELECT r.pcchrgcod, r.dodate, r.dmdcomb, r.pchrgqty, r.pchrgup, r.discount, r.disamt, r.pcchrgamt, r.docointkey, p.hpercode,CONCAT(p.patlast,', ',p.patfirst,' ',IF(p.patmiddle = '' OR p.patmiddle IS NULL,'',CONCAT(LEFT(p.patmiddle,1),'.'))) AS name
+    $statement = $db->prepare("SELECT r.docointkey,r.pcchrgcod, r.dodate, r.dmdcomb, r.pchrgqty, r.pchrgup, r.discount, r.disamt, r.pcchrgamt, r.docointkey, p.hpercode,CONCAT(p.patlast,', ',p.patfirst,' ',IF(p.patmiddle = '' OR p.patmiddle IS NULL,'',CONCAT(LEFT(p.patmiddle,1),'.'))) AS name,IF(r.disc_percent='' OR r.disc_percent IS NULL,'0.00',r.disc_percent) AS 'disc_per',IF(r.disc_percent='' OR r.disc_percent IS NULL,'0.00',(r.pchrgup * r.disc_percent)*r.pchrgqty) AS 'disc_amt'
       FROM hrxo AS r
       LEFT JOIN hperson AS p
       ON r.hpercode = p.hpercode
@@ -524,17 +524,17 @@ $result = $sql->fetch(PDO::FETCH_OBJ);
               $count=0;
               foreach($all_result as $row){
                 echo 
-                  '<tr>
-                    <td><input type="checkbox" class="form-control" name="discount" value="' . $count . '" /></td>
+                  '<tr id="check_result">
+                    <td><input type="checkbox" class="form-control" name="discount[]" id="'.$row["docointkey"].'" value="' .$row["docointkey"]. '" /></td>
                     <td>'.$row["pcchrgcod"].'</td>
                     <td>'.$row["dodate"].'</td>
                     <td>'.$row["dmdcomb"].'</td>
                     <td>'.$row["pchrgqty"].'</td>
                     <td>'.$row["pchrgup"].'</td>
-                    <td>'.$row["discount"].'</td>
-                    <td>'.$row["disamt"].'</td>
+                    <td>'.$row["disc_per"].'</td>
+                    <td>'.$row["disc_amt"].'</td>
                     <td>'.$row["pcchrgamt"].'</td>
-                    <td> </td>
+                    <td>'.$row["docointkey"].'</td>
                   </tr>';
 
                   $count = $count + 1;
@@ -587,6 +587,8 @@ $result = $sql->fetch(PDO::FETCH_OBJ);
           </tr>
 
         </table>
+
+        <span id="check_result_span"></span>
 
       </form> <!-- /#add_payment_form -->
 
@@ -686,4 +688,26 @@ $result = $sql->fetch(PDO::FETCH_OBJ);
   })
 
   });
+
+/*
+  function calculate() {
+    var arr = $.map($('input:checkbox:checked'), function(e,i){
+      return +e.value;
+    });
+    $('#check_result_span').text('the checked values are: ' + arr.join(','));
+  }
+
+  // calculate();
+
+  $('#check_result').delegate('input:checkbox','click',calculate); */
+
+
+
+  $("input[type=checkbox]").click(function() {
+    alert(this.value);
+  });
+
+
+
+
 </script>
